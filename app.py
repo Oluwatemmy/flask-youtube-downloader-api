@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, Response
+from flask_cors import CORS
 import yt_dlp
 import os, time, queue
 import threading, tempfile
@@ -6,6 +7,8 @@ import threading, tempfile
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '7bc8bbc2f76b9bfe947512e33c05e399e8c64abe48f23d1b917534298cb6d1bb'
 
+# Enable CORS for all routes
+CORS(app)
 
 # Target resolutions
 TARGET_RESOLUTIONS = ["360p", "480p", "720p", "1080p", "1440p", "2160p"]
