@@ -1,0 +1,42 @@
+# Render deployment config
+# This file is used to deploy the YouTube Downloader API on Render
+# It includes service configuration, environment variables, and disk storage
+
+services:
+  - type: web
+    name: youtube-downloader-api
+    env: python
+    region: oregon # region
+    plan: free # or starter, standard, pro paid plans
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --config gunicorn.conf.py wsgi:app
+    healthCheckPath: /api/health
+    
+    # Environment variables
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true  # Render will generate a secure secret key
+      - key: TEMP_DIR
+        value: /tmp
+      - key: CHUNK_SIZE
+        value: 8192
+      - key: MAX_WAIT_TIME
+        value: 45 # seconds
+      - key: CORS_ORIGINS
+        value: "*"  # Update with frontend domains
+      - key: LOG_LEVEL
+        value: WARNING
+      - key: GUNICORN_WORKERS
+        value: 1
+      - key: GUNICORN_LOG_LEVEL
+        value: warning
+    
+    # Disk storage for temporary files
+    # Temporary files will use ephemeral /tmp directory
+
+# For PostgreSQL database later
+# databases:
+#   - name: youtube-downloader-db
+#     plan: starter
