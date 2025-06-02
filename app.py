@@ -69,6 +69,15 @@ def stream_download_generator(url, format_id, filename):
 
     # Create a temporary file to stream through
     temp_path = os.path.join(config.TEMP_DIR, f"temp_download_{int(time.time())}_{filename}")
+
+    # cookie file path
+    cookie_file = '/etc/secrets/cookies.txt'   # For production 
+    
+    # Check if the cookie file exists
+    # Fallback to development cookies if not found(for testing purposes)
+    if not os.path.exists(cookie_file):
+        # use development cookies
+        cookie_file = 'youtube.com_cookies.txt'
     
     try:
         ydl_opts = {
@@ -79,6 +88,7 @@ def stream_download_generator(url, format_id, filename):
             'no_warnings': True,
             'merge_output_format': 'mp4',
             'ignoreerrors': False,
+            'cookiefile': cookie_file,  # Use the cookie file for authentication
         }
 
         # Start download in background thread
