@@ -39,7 +39,7 @@ class TestConfig(Config):
 
 class ProductionConfig(Config):
     """Production configuration."""
-    DEBUG = False
+    DEBUG = True
     HOST = '0.0.0.0'
     PORT = int(os.getenv('PORT', '5000'))
     

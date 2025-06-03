@@ -57,8 +57,31 @@ def sanitize_filename(name):
 
 def get_video_info(url):
     """Fetch video or playlist info without downloading."""
+    # cookie file path
+    cookie_file = '/etc/secrets/cookies.txt'   # For production 
+
+    if os.path.exists(cookie_file):
+        logging.error(f"Cookie file found at {cookie_file}")
+        print(f"Cookie file found at {cookie_file}")
+        # Check if file is readable
+        try:
+            with open(cookie_file, 'r') as f:
+                content = f.read()
+                logging.error(f"Cookie file size: {len(content)} characters")
+                print(f"Cookie file size: {len(content)} characters")
+        except Exception as e:
+            logging.error(f"Cannot read cookie file: {e}")
+            print(f"Cannot read cookie file: {e}")
+    
+    # Check if the cookie file exists
+    # Fallback to development cookies if not found(for testing purposes)
+    if not os.path.exists(cookie_file):
+        # use development cookies
+        cookie_file = 'youtube.com_cookies.txt'
+        logging.error(f"Cookie file not found at {cookie_file}")
+        print(f"Cookie file not found at {cookie_file}. Using development cookies instead.")
     try:
-        with yt_dlp.YoutubeDL({'quiet': True, 'no_warnings': True, 'skip_download': True}) as ydl:
+        with yt_dlp.YoutubeDL({'quiet': True, 'no_warnings': True, 'skip_download': True, 'cookiefile': cookie_file}) as ydl:
             return ydl.extract_info(url, download=False)
     except Exception as e:
         logger.error(f"Error retrieving video info: {e}")
