@@ -61,25 +61,15 @@ def get_video_info(url):
     cookie_file = '/etc/secrets/cookies.txt'   # For production 
 
     if os.path.exists(cookie_file):
-        logging.error(f"Cookie file found at {cookie_file}")
+        logging.info(f"Cookie file found at {cookie_file}")
         print(f"Cookie file found at {cookie_file}")
-        # Check if file is readable
-        try:
-            with open(cookie_file, 'r') as f:
-                content = f.read()
-                logging.error(f"Cookie file size: {len(content)} characters")
-                print(f"Cookie file size: {len(content)} characters")
-        except Exception as e:
-            logging.error(f"Cannot read cookie file: {e}")
-            print(f"Cannot read cookie file: {e}")
     
     # Check if the cookie file exists
     # Fallback to development cookies if not found(for testing purposes)
     if not os.path.exists(cookie_file):
         # use development cookies
         cookie_file = 'youtube.com_cookies.txt'
-        logging.error(f"Cookie file not found at {cookie_file}")
-        print(f"Cookie file not found at {cookie_file}. Using development cookies instead.")
+        logging.info(f"Cookie file not found at {cookie_file}")
     try:
         with yt_dlp.YoutubeDL({'quiet': True, 'no_warnings': True, 'skip_download': True, 'cookiefile': cookie_file}) as ydl:
             return ydl.extract_info(url, download=False)
@@ -97,25 +87,14 @@ def stream_download_generator(url, format_id, filename):
     cookie_file = '/etc/secrets/cookies.txt'   # For production 
 
     if os.path.exists(cookie_file):
-        logging.error(f"Cookie file found at {cookie_file}")
-        print(f"Cookie file found at {cookie_file}")
-        # Check if file is readable
-        try:
-            with open(cookie_file, 'r') as f:
-                content = f.read()
-                logging.error(f"Cookie file size: {len(content)} characters")
-                print(f"Cookie file size: {len(content)} characters")
-        except Exception as e:
-            logging.error(f"Cannot read cookie file: {e}")
-            print(f"Cannot read cookie file: {e}")
+        logging.info(f"Cookie file found at {cookie_file}")
     
     # Check if the cookie file exists
     # Fallback to development cookies if not found(for testing purposes)
     if not os.path.exists(cookie_file):
         # use development cookies
         cookie_file = 'youtube.com_cookies.txt'
-        logging.error(f"Cookie file not found at {cookie_file}")
-        print(f"Cookie file not found at {cookie_file}. Using development cookies instead.")
+        logging.info(f"Cookie file not found at {cookie_file}")
     
     try:
         ydl_opts = {
