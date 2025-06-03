@@ -74,13 +74,13 @@ def stream_download_generator(url, format_id, filename):
     cookie_file = '/etc/secrets/cookies.txt'   # For production 
 
     if os.path.exists(cookie_file):
-        logging.info(f"Cookie file found at {cookie_file}")
+        logging.error(f"Cookie file found at {cookie_file}")
         print(f"Cookie file found at {cookie_file}")
         # Check if file is readable
         try:
             with open(cookie_file, 'r') as f:
                 content = f.read()
-                logging.info(f"Cookie file size: {len(content)} characters")
+                logging.error(f"Cookie file size: {len(content)} characters")
                 print(f"Cookie file size: {len(content)} characters")
         except Exception as e:
             logging.error(f"Cannot read cookie file: {e}")
