@@ -6,7 +6,7 @@ from config import get_config
 from flask import Flask, request, jsonify, Response
 import yt_dlp
 import os, time, queue, logging
-import threading, tempfile
+import threading, tempfile, base64
 
 # Load environment variables from .env file
 load_dotenv()
@@ -30,15 +30,11 @@ logger = logging.getLogger(__name__)
 # Enable CORS for all routes
 CORS(app)
 
-# Target resolutions
-# TARGET_RESOLUTIONS = ["360p", "480p", "720p", "1080p", "1440p", "2160p"]
-
 class StreamLogger:
     """Simple logger that suppresses output."""
     def debug(self, msg): pass
     def warning(self, msg): pass
     def error(self, msg): pass
-
 
 def format_size(size):
     """Convert bytes to a human-readable format."""
@@ -54,27 +50,36 @@ def sanitize_filename(name):
     """Clean file names from forbidden characters."""
     return "".join(c for c in name if c.isalnum() or c in (' ', '.', '_', '-')).strip()
 
+def get_cookiefile_from_env():
+    cookie_env = os.getenv("YOUTUBE_COOKIES_BASE64")
+    if not cookie_env:
+        return None
+
+    try:
+        cookie_bytes = base64.b64decode(cookie_env.encode())
+        temp_cookie = tempfile.NamedTemporaryFile(delete=False, mode='wb')
+        temp_cookie.write(cookie_bytes)
+        temp_cookie.flush()
+        return temp_cookie.name
+    except Exception as e:
+        logger.error(f"Failed to load cookies from env: {e}")
+        return None
+
 
 def get_video_info(url):
     """Fetch video or playlist info without downloading."""
-    # cookie file path
-    cookie_file = '/etc/secrets/cookies.txt'   # For production 
-
-    if os.path.exists(cookie_file):
-        logging.info(f"Cookie file found at {cookie_file}")
-        print(f"Cookie file found at {cookie_file}")
-    
-    # Check if the cookie file exists
-    # Fallback to development cookies if not found(for testing purposes)
-    if not os.path.exists(cookie_file):
-        # use development cookies
-        cookie_file = 'youtube.com_cookies.txt'
-        logging.info(f"Cookie file not found at {cookie_file}")
+    cookie_file = get_cookiefile_from_env() # For production
     try:
         with yt_dlp.YoutubeDL({'quiet': True, 'no_warnings': True, 'skip_download': True, 'cookiefile': cookie_file}) as ydl:
             return ydl.extract_info(url, download=False)
     except Exception as e:
         logger.error(f"Error retrieving video info: {e}")
+    finally:
+        if cookie_file and os.path.exists(cookie_file):
+            try:
+                os.remove(cookie_file)  # Clean up temporary cookie file
+            except Exception as e:
+                logger.error(f"Error removing temporary cookie file: {e}")
     return None
 
 def stream_download_generator(url, format_id, filename):
