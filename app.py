@@ -65,21 +65,28 @@ def get_cookiefile_from_env():
         logger.error(f"Failed to load cookies from env: {e}")
         return None
 
-
 def get_video_info(url):
     """Fetch video or playlist info without downloading."""
     cookie_file = get_cookiefile_from_env() # For production
-    try:
-        with yt_dlp.YoutubeDL({'quiet': True, 'no_warnings': True, 'skip_download': True, 'cookiefile': cookie_file}) as ydl:
-            return ydl.extract_info(url, download=False)
-    except Exception as e:
-        logger.error(f"Error retrieving video info: {e}")
-    finally:
-        if cookie_file and os.path.exists(cookie_file):
-            try:
-                os.remove(cookie_file)  # Clean up temporary cookie file
-            except Exception as e:
-                logger.error(f"Error removing temporary cookie file: {e}")
+    if os.getenv('FLASK_ENV') == 'production':
+        try:
+            with yt_dlp.YoutubeDL({'quiet': True, 'no_warnings': True, 'skip_download': True, 'cookiefile': cookie_file}) as ydl:
+                return ydl.extract_info(url, download=False)
+        except Exception as e:
+            logger.error(f"Error retrieving video info: {e}")
+        finally:
+            if cookie_file and os.path.exists(cookie_file):
+                try:
+                    os.remove(cookie_file)  # Clean up temporary cookie file
+                except Exception as e:
+                    logger.error(f"Error removing temporary cookie file: {e}")
+    else:
+        # For development, use yt-dlp directly without cookies
+        try:
+            with yt_dlp.YoutubeDL({'quiet': True, 'no_warnings': True, 'skip_download': True}) as ydl:
+                return ydl.extract_info(url, download=False)
+        except Exception as e:
+            logger.error(f"Error retrieving video info: {e}")
     return None
 
 def stream_download_generator(url, format_id, filename):
@@ -89,17 +96,7 @@ def stream_download_generator(url, format_id, filename):
     temp_path = os.path.join(config.TEMP_DIR, f"temp_download_{int(time.time())}_{filename}")
 
     # cookie file path
-    cookie_file = '/etc/secrets/cookies.txt'   # For production 
-
-    if os.path.exists(cookie_file):
-        logging.info(f"Cookie file found at {cookie_file}")
-    
-    # Check if the cookie file exists
-    # Fallback to development cookies if not found(for testing purposes)
-    if not os.path.exists(cookie_file):
-        # use development cookies
-        cookie_file = 'youtube.com_cookies.txt'
-        logging.info(f"Cookie file not found at {cookie_file}")
+    cookie_file = get_cookiefile_from_env()  # For production
     
     try:
         ydl_opts = {
@@ -110,8 +107,14 @@ def stream_download_generator(url, format_id, filename):
             'no_warnings': True,
             'merge_output_format': 'mp4',
             'ignoreerrors': False,
-            'cookiefile': cookie_file,  # Use the cookie file for authentication
         }
+
+        if os.getenv('FLASK_ENV') == 'production':
+            # In production, we use cookies for authenticated downloads
+            if cookie_file and os.path.exists(cookie_file):
+                ydl_opts['cookiefile'] = cookie_file
+            else:
+                logger.warning("Cookie file not found, proceeding without cookies.")
 
         # Start download in background thread
         download_queue = queue.Queue()
@@ -195,6 +198,12 @@ def stream_download_generator(url, format_id, filename):
                     os.remove(temp_file)
         except Exception as e:
             logger.error(f"Error cleaning up temporary file: {e}")
+
+        if cookie_file and os.path.exists(cookie_file):
+            try:
+                os.remove(cookie_file)  # Clean up temporary cookie file
+            except Exception as e:
+                logger.error(f"Error removing temporary cookie file: {e}")
 
 @app.route('/api/video-info', methods=['POST'])
 def get_video_info_api():
